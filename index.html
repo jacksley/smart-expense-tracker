@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Expense Tracker</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- jsPDF for export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">◈</span>
+      <span class="brand-name">Expensa</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-btn active" data-view="dashboard" title="Dashboard">
+        <span class="nav-icon">⬡</span>
+        <span class="nav-label">Dashboard</span>
+      </button>
+      <button class="nav-btn" data-view="transactions" title="Transactions">
+        <span class="nav-icon">⇌</span>
+        <span class="nav-label">Transactions</span>
+      </button>
+      <button class="nav-btn" data-view="budget" title="Budget">
+        <span class="nav-icon">◎</span>
+        <span class="nav-label">Budget</span>
+      </button>
+      <button class="nav-btn" data-view="insights" title="Insights">
+        <span class="nav-icon">◈</span>
+        <span class="nav-label">Insights</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+        <span class="theme-icon">☀</span>
+      </button>
+      <button class="export-btn" id="exportPDF" title="Export PDF">
+        <span>↓</span> Export
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== MOBILE TOPBAR ===== -->
+  <header class="topbar">
+    <button class="hamburger" id="hamburger">☰</button>
+    <span class="topbar-title">Expensa</span>
+    <button class="theme-toggle-mobile" id="themeToggleMobile">☀</button>
+  </header>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- ========== VIEW: DASHBOARD ========== -->
+    <section class="view active" id="view-dashboard">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-subtitle" id="currentMonthLabel">Loading...</p>
+        </div>
+        <button class="add-btn" id="openModal">+ Add Transaction</button>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="cards-grid">
+        <div class="card card--balance">
+          <div class="card-label">Total Balance</div>
+          <div class="card-value" id="totalBalance">₹0.00</div>
+          <div class="card-sub" id="balanceTrend">↑ Positive</div>
+        </div>
+        <div class="card card--income">
+          <div class="card-label">Total Income</div>
+          <div class="card-value" id="totalIncome">₹0.00</div>
+          <div class="card-sub">This Month</div>
+        </div>
+        <div class="card card--expense">
+          <div class="card-label">Total Expenses</div>
+          <div class="card-value" id="totalExpenses">₹0.00</div>
+          <div class="card-sub">This Month</div>
+        </div>
+        <div class="card card--savings">
+          <div class="card-label">Savings Rate</div>
+          <div class="card-value" id="savingsRate">0%</div>
+          <div class="card-sub">of income saved</div>
+        </div>
+      </div>
+
+      <!-- Chart + Recent -->
+      <div class="dashboard-bottom">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h2 class="section-title">Expense Breakdown</h2>
+            <span class="chart-legend-hint">by category</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="expenseChart"></canvas>
+            <div class="chart-empty" id="chartEmpty">No expense data yet</div>
+          </div>
+        </div>
+
+        <div class="recent-card">
+          <div class="recent-header">
+            <h2 class="section-title">Recent Activity</h2>
+            <button class="see-all-btn" data-view="transactions">See all →</button>
+          </div>
+          <ul class="transaction-list" id="recentList">
+            <li class="empty-state">No transactions yet.<br>Add one to get started!</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== VIEW: TRANSACTIONS ========== -->
+    <section class="view" id="view-transactions">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Transactions</h1>
+          <p class="page-subtitle">Full history & search</p>
+        </div>
+        <button class="add-btn" id="openModal2">+ Add Transaction</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-bar">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="searchInput" class="search-input" placeholder="Search transactions…"/>
+        </div>
+        <select id="filterCategory" class="filter-select">
+          <option value="all">All Categories</option>
+          <option value="Food">Food</option>
+          <option value="Transport">Transport</option>
+          <option value="Shopping">Shopping</option>
+          <option value="Bills">Bills</option>
+          <option value="Health">Health</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Education">Education</option>
+          <option value="Salary">Salary</option>
+          <option value="Freelance">Freelance</option>
+          <option value="Investment">Investment</option>
+          <option value="Other">Other</option>
+        </select>
+        <select id="filterType" class="filter-select">
+          <option value="all">All Types</option>
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+        </select>
+      </div>
+
+      <!-- Full Transaction List -->
+      <ul class="transaction-list full-list" id="fullList">
+        <li class="empty-state">No transactions found.</li>
+      </ul>
+    </section>
+
+    <!-- ========== VIEW: BUDGET ========== -->
+    <section class="view" id="view-budget">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Monthly Budget</h1>
+          <p class="page-subtitle">Set limits, track spending</p>
+        </div>
+      </div>
+
+      <div class="budget-grid">
+        <!-- Set Budget -->
+        <div class="budget-set-card">
+          <h2 class="section-title">Set Category Budget</h2>
+          <div class="budget-form">
+            <select id="budgetCategory" class="filter-select">
+              <option value="Food">🍜 Food</option>
+              <option value="Transport">🚌 Transport</option>
+              <option value="Shopping">🛍 Shopping</option>
+              <option value="Bills">🏠 Bills</option>
+              <option value="Health">💊 Health</option>
+              <option value="Entertainment">🎬 Entertainment</option>
+              <option value="Education">📚 Education</option>
+              <option value="Other">📦 Other</option>
+            </select>
+            <input type="number" id="budgetAmount" class="form-input" placeholder="Budget amount (₹)" min="0"/>
+            <button class="add-btn" id="setBudgetBtn">Set Budget</button>
+          </div>
+        </div>
+
+        <!-- Budget Progress -->
+        <div class="budget-progress-card">
+          <h2 class="section-title">Budget vs Spending</h2>
+          <div id="budgetProgressList" class="budget-progress-list">
+            <p class="empty-state">No budgets set yet.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== VIEW: INSIGHTS ========== -->
+    <section class="view" id="view-insights">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Spending Insights</h1>
+          <p class="page-subtitle">AI-powered monthly analysis</p>
+        </div>
+      </div>
+
+      <div class="insights-grid">
+        <div class="insight-card" id="insightTopCategory">
+          <div class="insight-icon">🏆</div>
+          <div class="insight-label">Top Spending Category</div>
+          <div class="insight-value" id="topCategoryVal">—</div>
+        </div>
+        <div class="insight-card" id="insightAvgDaily">
+          <div class="insight-icon">📅</div>
+          <div class="insight-label">Avg Daily Spend</div>
+          <div class="insight-value" id="avgDailyVal">₹0</div>
+        </div>
+        <div class="insight-card" id="insightLargest">
+          <div class="insight-icon">⚡</div>
+          <div class="insight-label">Largest Transaction</div>
+          <div class="insight-value" id="largestVal">₹0</div>
+        </div>
+        <div class="insight-card" id="insightCount">
+          <div class="insight-icon">🔢</div>
+          <div class="insight-label">Total Transactions</div>
+          <div class="insight-value" id="txCountVal">0</div>
+        </div>
+      </div>
+
+      <div class="insight-tips-card">
+        <h2 class="section-title">💡 Smart Tips</h2>
+        <div id="smartTips" class="tips-list">
+          <p class="tip-item">Add transactions to get personalised spending tips.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== ADD TRANSACTION MODAL ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">New Transaction</h2>
+        <button class="modal-close" id="closeModal">✕</button>
+      </div>
+
+      <!-- Type Tabs -->
+      <div class="type-tabs">
+        <button class="type-tab active" data-type="expense">Expense</button>
+        <button class="type-tab" data-type="income">Income</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" id="txDescription" class="form-input" placeholder="e.g. Grocery shopping"/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Amount (₹)</label>
+            <input type="number" id="txAmount" class="form-input" placeholder="0.00" min="0" step="0.01"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" id="txDate" class="form-input"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select id="txCategory" class="form-input">
+            <option value="" disabled selected>Select category</option>
+            <optgroup label="Expenses">
+              <option value="Food">🍜 Food</option>
+              <option value="Transport">🚌 Transport</option>
+              <option value="Shopping">🛍 Shopping</option>
+              <option value="Bills">🏠 Bills</option>
+              <option value="Health">💊 Health</option>
+              <option value="Entertainment">🎬 Entertainment</option>
+              <option value="Education">📚 Education</option>
+              <option value="Other">📦 Other</option>
+            </optgroup>
+            <optgroup label="Income">
+              <option value="Salary">💼 Salary</option>
+              <option value="Freelance">💻 Freelance</option>
+              <option value="Investment">📈 Investment</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Note (optional)</label>
+          <input type="text" id="txNote" class="form-input" placeholder="Any extra details…"/>
+        </div>
+        <div id="formError" class="form-error"></div>
+        <button class="submit-btn" id="submitTx">Add Transaction</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DELETE CONFIRM TOAST ===== -->
+  <div class="toast" id="toast">Transaction deleted!</div>
+
+  <script src="app.js"></script>
+</body>
+</html>
